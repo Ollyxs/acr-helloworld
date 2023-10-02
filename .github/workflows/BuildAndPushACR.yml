@@ -7,8 +7,12 @@ on:
     branch: [main]
 
 jobs:
-  anazlyze:
+  analyze:
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
     defaults:
       run:
         shell: bash
@@ -33,6 +37,7 @@ jobs:
         setup-python-dependencies: false
 
   test:
+    needs: analyze
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -52,13 +57,14 @@ jobs:
         python -m unittest discover -s test/
 
   build:
+    needs: test
     runs-on: ubuntu-latest
     defaults:
       run:
         shell: bash
         working-directory: ${{ github.workspace }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - uses: docker/login-action@v3
       with:
         registry: ${{ secrets.ACR_NAME }}.azurecr.io
