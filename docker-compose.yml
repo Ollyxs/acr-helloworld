@@ -1,0 +1,6 @@
+version: '3.7'
+
+services:
+  helloworld:
+    image: helloworld:v1.1
+    container_name: helloworld
