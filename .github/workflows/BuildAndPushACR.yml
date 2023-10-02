@@ -73,8 +73,8 @@ jobs:
         ecr: "false"
         logout: "true"
     - run: |
-        docker build . -t ${{ secrets.ACR_NAME }}/${{env.REPO_NAME}}:${{ github.sha }}
-        docker push ${{ secrets.ARC_NAME }}/${{env.REPO_NAME}}:${{ github.sha }}
+        docker build . -t ${{ secrets.ACR_NAME }}/${{ env.REPO_NAME }}:${{ github.sha }}
+        docker push ${{ secrets.ACR_NAME }}/${{ env.REPO_NAME }}:${{ github.sha }}
 
   deploy:
     needs: build
@@ -94,8 +94,8 @@ jobs:
         location: eastus
         name: authme
         resource-group: um
-        image: ${{ secrets.ACR_NAME }}/${{env.REPO_NAME}}:${{ github.sha }}
-        dns-name-label: authme-${{ github.run_id }}-${{ github.run_attempt }}
+        image: ${{ secrets.ACR_NAME }}/${{ env.REPO_NAME }}:${{ github.sha }}
+        dns-name-label: ${{ env.REPO_NAME }}-${{ github.run_id }}-${{ github.run_attempt }}
         registry-username: ${{ secrets.REGISTRY_USERNAME }}
         registry-password: ${{ secrets.REGISTRY_PASSWORD }}
         ports: 5000
