@@ -65,9 +65,9 @@ jobs:
         working-directory: ${{ github.workspace }}
     steps:
     - uses: actions/checkout@v4
-    - uses: docker/login-action@v3
+    - uses: azure/docker-login@v1
       with:
-        registry: ${{ secrets.ACR_NAME }}.azurecr.io
+        login-server: ${{ secrets.ACR_NAME }}.azurecr.io
         username: ${{ secrets.REGISTRY_USERNAME }}
         password: ${{ secrets.REGISTRY_PASSWORD }}
         ecr: "false"
@@ -92,7 +92,7 @@ jobs:
       uses: azure/aci-deploy@v1
       with:
         location: eastus
-        name: authme
+        name: acr-helloworld
         resource-group: um
         image: ${{ secrets.ACR_NAME }}/${{ env.REPO_NAME }}:${{ github.sha }}
         dns-name-label: ${{ env.REPO_NAME }}-${{ github.run_id }}-${{ github.run_attempt }}
