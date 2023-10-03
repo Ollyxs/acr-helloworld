@@ -74,7 +74,6 @@ jobs:
         logout: "true"
     - run: |
         docker build . -t ${{ secrets.ACR_NAME }}/${{ env.REPO_NAME }}:${{ github.sha }}
-        docker tag ${{ secrets.ACR_NAME }}/${{ env.REPO_NAME }}:${{ github.sha }} ${{ secrets.ACR_NAME }}.azurecr.io/${{ secrets.ACR_NAME }}/${{ env.REPO_NAME }}:${{ github.sha }}
         docker push ${{ secrets.ACR_NAME }}/${{ env.REPO_NAME }}:${{ github.sha }}
 
   deploy:
