@@ -4,7 +4,12 @@ env:
 on:
   workflow_dispatch:
   push:
-    branch: [main]
+    tags:
+      - 'v.*.*.*'
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   analyze:
@@ -17,20 +22,20 @@ jobs:
       run:
         shell: bash
     steps:
-    - name: Checkout repository
+    - name: 'Checkout repository'
       uses: actions/checkout@v4
-    - name: Set up Python
+    - name: 'Set up Python'
       uses: actions/setup-python@v4
       with:
         python-version: '3.10'
-    - name: Install dependencies
+    - name: 'Install dependencies'
       run: |
         python -m pip install --upgrade pip
         if [ -f requirements.txt ];
         then pip install -r requirements.txt;
         fi
         echo "CODEQL_PYTHON=$(which python)" >> $GITHUB_ENV
-    - name: Initialize CodeQL
+    - name: 'Initialize CodeQL'
       uses: github/codeql-action/init@v2
       with:
         languages: python
@@ -44,20 +49,32 @@ jobs:
         shell: bash
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python
+    - name: 'Set up Python'
       uses: actions/setup-python@v4
       with:
         python-version: '3.10'
-    - name: Install dependencies
+    - name: 'Install dependencies'
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-    - name: Test with unittest
+    - name: 'Test with unittest'
       run: |
         python -m unittest discover -s tests
 
+  getTag:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+    - name: 'Get tag'
+      id: tag
+      uses: dawidd6/action-get-tag@v1
+    - name: 'Use tag'
+      run: echo "${{ steps.tag.outputs.tag }} >> "$GITHUB_OUTPUT"
+
   build:
-    needs: test
+    if: contains(github.event.head_commit.message, 'build') || cancelled()
+    needs: [test, getTag]
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -73,11 +90,12 @@ jobs:
         username: ${{ secrets.REGISTRY_USERNAME }}
         password: ${{ secrets.REGISTRY_PASSWORD }}
     - run: |
-        docker build . -t ${{ secrets.ACR_NAME }}/${{ env.REPO_NAME }}:${{ github.sha }}
-        docker push ${{ secrets.ACR_NAME }}/${{ env.REPO_NAME }}:${{ github.sha }}
+        docker build . -t ${{ secrets.ACR_NAME }}/${{ env.REPO_NAME }}:${{ needs.getTag.outputs.tag }}
+        docker push ${{ secrets.ACR_NAME }}/${{ env.REPO_NAME }}:${{ needs.getTag.outputs.tag }}
 
   deploy:
-    needs: build
+    if: contains(github.event.head_commit.message, 'deploy') || cancelled()
+    needs: [build, getTag]
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -94,7 +112,7 @@ jobs:
         location: eastus
         name: acr-helloworld
         resource-group: um
-        image: ${{ secrets.ACR_NAME }}/${{ env.REPO_NAME }}:${{ github.sha }}
+        image: ${{ secrets.ACR_NAME }}/${{ env.REPO_NAME }}:${{ needs.getTag.outputs.tag }}
         dns-name-label: um-${{ github.run_id }}-${{ github.run_attempt }}
         registry-username: ${{ secrets.REGISTRY_USERNAME }}
         registry-password: ${{ secrets.REGISTRY_PASSWORD }}
