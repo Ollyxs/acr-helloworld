@@ -4,8 +4,8 @@ env:
 on:
   workflow_dispatch:
   push:
-    tags:
-      - 'v.*.*.*'
+    tags: ['v*.*.*']
+    branch: [main]
 
 permissions:
   id-token: write
@@ -73,7 +73,7 @@ jobs:
       run: echo "${{ steps.tag.outputs.tag }} >> "$GITHUB_OUTPUT"
 
   build:
-    if: contains(github.event.head_commit.message, 'build') || cancelled()
+    #if: contains(github.event.head_commit.message, 'build') || cancelled()
     needs: [test, getTag]
     runs-on: ubuntu-latest
     defaults:
@@ -94,7 +94,7 @@ jobs:
         docker push ${{ secrets.ACR_NAME }}/${{ env.REPO_NAME }}:${{ needs.getTag.outputs.tag }}
 
   deploy:
-    if: contains(github.event.head_commit.message, 'deploy') || cancelled()
+    #if: contains(github.event.head_commit.message, 'deploy') || cancelled()
     needs: [build, getTag]
     runs-on: ubuntu-latest
     defaults:
