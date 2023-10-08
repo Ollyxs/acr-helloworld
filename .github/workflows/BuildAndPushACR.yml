@@ -70,7 +70,7 @@ jobs:
       id: tag
       uses: dawidd6/action-get-tag@v1
     - name: 'Use tag'
-      run: echo "${{ steps.tag.outputs.tag }}" >> "$GITHUB_OUTPUT"
+      run: echo "tag=${{ steps.tag.outputs.tag }}" >> "$GITHUB_OUTPUT"
 
   build:
     #if: contains(github.event.head_commit.message, 'build') || cancelled()
