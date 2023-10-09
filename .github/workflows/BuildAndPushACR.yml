@@ -129,9 +129,9 @@ jobs:
       run: |
         MESSAGE=$(git log -1 --pretty=%B)
         VERSION=$(echo $MESSAGE | grep -oP 'v\d+\.\d+\.\d+')
-        echo "version=$VERSION" >> $GIT_OUTPUT
+        echo "version=$VERSION"
       env:
-        TAG: ${{ steps.version.outputs.version }}
+        TAG: ${{ $VERSION }}
     - name: 'deploy Container Instancer'
       uses: azure/aci-deploy@v1
       with:
