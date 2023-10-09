@@ -116,6 +116,8 @@ jobs:
           #if [ "${{ needs.build.outputs.status }}" == "success" ]; then
           #echo "run=true" >> $env:GIT_OUTPUT
           #fi
+    - name: 'Checkout GitHub Action'
+      uses: actions/checkout@v4
     - name: 'Get lastest version of tag if build was successful'
       if: needs.build.outputs.status == 'success'
       run: echo "version=${{ needs.getTag.outputs.tag }}
