@@ -106,7 +106,7 @@ jobs:
         docker push ${{ secrets.ACR_NAME }}/${{ env.REPO_NAME }}:${{ needs.getTag.outputs.tag }}
     - name: 'Work successfully'
       id: build
-      run: echo "status=success" >> $GIT_OUTPUT
+      run: echo "::set-output name=status::success"
 
   deploy:
     if: contains(github.event.head_commit.message, 'deploy') || !contains(github.event.head_commit.message, 'build')
