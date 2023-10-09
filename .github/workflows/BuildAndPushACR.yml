@@ -12,6 +12,17 @@ permissions:
   contents: read
 
 jobs:
+  getTag:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+    - name: 'Get tag'
+      id: tag
+      uses: dawidd6/action-get-tag@v1
+    - name: 'Use tag'
+      run: echo "tag=${{ steps.tag.outputs.tag }}" >> "$GITHUB_OUTPUT"
+
   analyze:
     runs-on: ubuntu-latest
     permissions:
@@ -61,20 +72,21 @@ jobs:
       run: |
         python -m unittest discover -s tests
 
-  getTag:
+  security:
+    needs: test
     runs-on: ubuntu-latest
-    outputs:
-      tag: ${{ steps.tag.outputs.tag }}
     steps:
-    - name: 'Get tag'
-      id: tag
-      uses: dawidd6/action-get-tag@v1
-    - name: 'Use tag'
-      run: echo "tag=${{ steps.tag.outputs.tag }}" >> "$GITHUB_OUTPUT"
+    - uses: actions/checkout@master
+    - name: 'Run Snyk to check for vulnerabilities'
+      uses: snyk/actions/python-3.10@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      wiht:
+        command: monitor
 
   build:
     if: contains(github.event.head_commit.message, 'build') || cancelled()
-    needs: [test, getTag]
+    needs: [test, getTag, security]
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -98,7 +110,7 @@ jobs:
 
   deploy:
     if: contains(github.event.head_commit.message, 'deploy') || cancelled()
-    needs: [build, getTag]
+    needs: [build, getTag, security]
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -122,21 +134,7 @@ jobs:
           VERSION=$(echo $MESSAGE | grep -oP 'v\d+\.\d+\.\d+')
           echo "::set-output name=tag::$VERSION"
         fi
-      #env:
-      #TAG: ${{ needs.getTag.outputs.tag }}
-      #- name: 'Get tag version of commit if build is skipped'
-      #id: tag
-      #if: needs.build.outputs.status != 'success'
-      #run: |
-      #  MESSAGE=$(git log -1 --pretty=%B)
-      #  VERSION=$(echo $MESSAGE | grep -oP 'v\d+\.\d+\.\d+')
-      #  echo "::set-output name=tag::$VERSION"
-      #- name: 'Set tag'
-      #if: needs.build.outputs.status != 'success'
-      #run: echo "version=${{ steps.tag.outputs.tag }}"
-      #env:
-      #  TAG: ${{ steps.tag.outputs.tag }}
-    - name: 'deploy Container Instancer'
+    - name: 'Deploy Container Instancer'
       uses: azure/aci-deploy@v1
       with:
         location: eastus
@@ -150,6 +148,6 @@ jobs:
         cpu: 1
         memory: 1
 
-    - name: 'logout'
+    - name: 'Logout'
       run: |
         az logout
