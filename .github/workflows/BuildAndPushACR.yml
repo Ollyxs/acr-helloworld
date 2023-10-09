@@ -112,9 +112,9 @@ jobs:
       id: check
       run: |
         echo "build status: ${{ needs.build.outputs.status }}"
-        echo "run=false" >> $GIT_OUTPUT
+        echo "run=false" >> $env:GIT_OUTPUT
         if [ "${{ needs.build.outputs.status }}" == "success" ]; then
-          echo "run=true" >> $GIT_OUTPUT
+          echo "run=true" >> $env:GIT_OUTPUT
         fi
     - name: 'Get lastest version of tag if build was successful'
       if: steps.check.outputs.run == 'true'
