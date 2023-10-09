@@ -108,22 +108,22 @@ jobs:
       uses: azure/login@v1
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
-    - name: 'Check if build was successful'
-      id: check
-      run: |
-        echo "build status: ${{ needs.build.outputs.status }}"
-        echo "run=false" >> $env:GIT_OUTPUT
-        if [ "${{ needs.build.outputs.status }}" == "success" ]; then
-          echo "run=true" >> $env:GIT_OUTPUT
-        fi
+          #- name: 'Check if build was successful'
+          #id: check
+          #run: |
+          #echo "build status: ${{ needs.build.outputs.status }}"
+          #echo "run=false" >> $env:GIT_OUTPUT
+          #if [ "${{ needs.build.outputs.status }}" == "success" ]; then
+          #echo "run=true" >> $env:GIT_OUTPUT
+          #fi
     - name: 'Get lastest version of tag if build was successful'
-      if: steps.check.outputs.run == 'true'
+      if: needs.build.outputs.status == 'success'
       run: echo "version=${{ needs.getTag.outputs.tag }}
       env:
         TAG: ${{ needs.getTag.outputs.tag }}
     - name: 'Get tag version of commit if build is skipped'
       id: version
-      if: steps.check.outputs.run == 'false'
+      if: needs.build.outputs.status != 'success'
       run: |
         MESSAGE=$(git log -1 --pretty=%B)
         VERSION=$(echo $MESSAGE | grep -oP 'v\d+\.\d+\.\d+')
