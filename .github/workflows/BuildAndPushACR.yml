@@ -103,6 +103,8 @@ jobs:
     defaults:
       run:
         shell: bash
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
     steps:
     - name: 'Login via Azure CLI'
       uses: azure/login@v1
@@ -129,7 +131,7 @@ jobs:
       run: |
         MESSAGE=$(git log -1 --pretty=%B)
         VERSION=$(echo $MESSAGE | grep -oP 'v\d+\.\d+\.\d+')
-        echo "tag=$VERSION" >> $GIT_OUTPUT
+        echo "::set-output name=tag::$VERSION"
     - name: 'Set tag'
       if: needs.build.outputs.status != 'success'
       run: echo "version=${{ steps.version.outputs.tag }}"
