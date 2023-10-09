@@ -92,6 +92,9 @@ jobs:
     - run: |
         docker build . -t ${{ secrets.ACR_NAME }}/${{ env.REPO_NAME }}:${{ needs.getTag.outputs.tag }}
         docker push ${{ secrets.ACR_NAME }}/${{ env.REPO_NAME }}:${{ needs.getTag.outputs.tag }}
+    - name: 'Work successfully'
+      id: build
+      run: echo "status=success" >> $GIT_OUTPUT
 
   deploy:
     if: contains(github.event.head_commit.message, 'deploy') || cancelled()
@@ -105,14 +108,34 @@ jobs:
       uses: azure/login@v1
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
-
+    - name: 'Check if build was successful'
+      id: check
+      run: |
+        echo "build status: ${{ needs.build.outputs.status }}
+        echo "run=false" >> $GIT_OUTPUT
+        if [ "${{ needs.build.outputs.status }}" == "success" ]; then
+          echo "run=true" >> $GIT_OUTPUT
+        fi
+    - name: 'Get lastest version of tag if build was successful'
+      if: steps.check.outputs.run == 'true'
+      env:
+        TAG: ${{ needs.getTag.outputs.tag }}
+    - name: 'Get tag version of commit if build is skipped'
+      id: version
+      if: steps.check.outputs.run == 'false'
+      run: |
+        MESSAGE=$(git log -1 --pretty=%B)
+        VERSION=$(echo $MESSAGE | grep -oP 'v\d+\.\d+\.\d+')
+        echo "version=$VERSION" >> $GIT_OUTPUT
+      env:
+        TAG: ${{ steps.version.outputs.version }}
     - name: 'deploy Container Instancer'
       uses: azure/aci-deploy@v1
       with:
         location: eastus
         name: acr-helloworld
         resource-group: um
-        image: ${{ secrets.ACR_NAME }}/${{ env.REPO_NAME }}:${{ needs.getTag.outputs.tag }}
+        image: ${{ secrets.ACR_NAME }}/${{ env.REPO_NAME }}:${{ env.TAG }}
         dns-name-label: um-${{ github.run_id }}-${{ github.run_attempt }}
         registry-username: ${{ secrets.REGISTRY_USERNAME }}
         registry-password: ${{ secrets.REGISTRY_PASSWORD }}
