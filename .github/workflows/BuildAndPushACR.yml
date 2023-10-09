@@ -124,17 +124,17 @@ jobs:
       env:
         TAG: ${{ needs.getTag.outputs.tag }}
     - name: 'Get tag version of commit if build is skipped'
-      id: version
+      id: tag
       if: needs.build.outputs.status != 'success'
       run: |
         MESSAGE=$(git log -1 --pretty=%B)
         VERSION=$(echo $MESSAGE | grep -oP 'v\d+\.\d+\.\d+')
-        echo "version=$VERSION"
+        echo "tag=$VERSION" >> $GIT_OUTPUT
     - name: 'Set tag'
       if: needs.build.outputs.status != 'success'
-      run: echo "version=${{ steps.version.outputs.version }}"
+      run: echo "version=${{ steps.version.outputs.tag }}"
       env:
-        TAG: ${{ steps.version.outputs.version }}
+        TAG: ${{ steps.version.outputs.tag }}
     - name: 'deploy Container Instancer'
       uses: azure/aci-deploy@v1
       with:
