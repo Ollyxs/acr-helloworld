@@ -134,9 +134,9 @@ jobs:
         echo "::set-output name=tag::$VERSION"
     - name: 'Set tag'
       if: needs.build.outputs.status != 'success'
-      run: echo "version=${{ steps.version.outputs.tag }}"
+      run: echo "version=${{ steps.tag.outputs.tag }}"
       env:
-        TAG: ${{ steps.version.outputs.tag }}
+        TAG: ${{ steps.tag.outputs.tag }}
     - name: 'deploy Container Instancer'
       uses: azure/aci-deploy@v1
       with:
