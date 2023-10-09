@@ -118,6 +118,7 @@ jobs:
         fi
     - name: 'Get lastest version of tag if build was successful'
       if: steps.check.outputs.run == 'true'
+      run: echo "version=${{ needs.getTag.outputs.tag }}
       env:
         TAG: ${{ needs.getTag.outputs.tag }}
     - name: 'Get tag version of commit if build is skipped'
