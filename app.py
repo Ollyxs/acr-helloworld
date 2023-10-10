@@ -3,9 +3,6 @@ import sys
 from flask import Flask
 from dotenv import load_dotenv
 
-sys.path.append(os.path.dirname(os.path.relpath(__file__)))
-from config import Config
-
 
 from opentelemetry import trace
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
@@ -19,7 +16,6 @@ from azure.monitor.opentelemetry.exporter import AzureMonitorTraceExporter
 load_dotenv()
 
 app = Flask(__name__)
-app.config.from_object(Config)
 tracer_provider = TracerProvider(
         resource=Resource.create({SERVICE_NAME: str(os.getenv('SERVICE'))})
 )
