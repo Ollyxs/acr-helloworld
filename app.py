@@ -1,6 +1,43 @@
+import os
+import sys
 from flask import Flask
+from dotenv import load_dotenv
+
+sys.path.append(os.path.dirname(os.path.relpath(__file__)))
+from config import Config
+
+
+from opentelemetry import trace
+from opentelemetry.instrumentation.flask import FlaskInstrumentor
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
+from azure.monitor.opentelemetry.exporter import AzureMonitorTraceExporter
+
+load_dotenv()
 
 app = Flask(__name__)
+app.config.from_object(Config)
+tracer_provider = TracerProvider(
+        resource=Resource.create({SERVICE_NAME: str(os.getenv('SERVICE'))})
+)
+trace.set_tracer_provider(
+    tracer_provider
+)
+
+FlaskInstrumentor().instrument_app(app)
+
+RequestsInstrumentor().instrument()
+
+trace_exporter = AzureMonitorTraceExporter(
+    connection_string=os.getenv('APP_CONNECTION')
+)
+
+tracer_provider.add_span_processor(
+    BatchSpanProcessor(trace_exporter)
+)
 
 @app.route('/')
 def hello():

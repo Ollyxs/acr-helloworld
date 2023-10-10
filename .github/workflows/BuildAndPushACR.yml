@@ -149,6 +149,9 @@ jobs:
         ports: 5000
         cpu: 1
         memory: 1
+        environment-variables: SERVICE=${{ env.REPO_NAME }}
+        secure-environment-variables: APP_CONNECTION=${{ secrets.APP_CONNECTION }}
+
 
     - name: 'Logout'
       run: |
