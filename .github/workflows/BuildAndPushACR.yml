@@ -85,7 +85,7 @@ jobs:
         command: monitor
 
   build:
-    if: contains(github.event.head_commit.message, 'build') || !contains(github.event.head_commit.message, 'deploy')
+    if: ${{ !contains(github.event.head_commit.message, 'deploy') }}
     needs: [test, getTag, security]
     runs-on: ubuntu-latest
     defaults:
@@ -111,7 +111,7 @@ jobs:
       status: ${{ steps.build.outputs.status }}
 
   deploy:
-    if: contains(github.event.head_commit.message, 'deploy') || !contains(github.event.head_commit.message, 'build')
+    if: ${{ !contains(github.event.head_commit.message, 'build') }}
     needs: [build, getTag, security]
     runs-on: ubuntu-latest
     defaults:
