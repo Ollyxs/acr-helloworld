@@ -107,6 +107,8 @@ jobs:
     - name: 'Work successfully'
       id: build
       run: echo "::set-output name=status::success"
+    outputs:
+      status: ${{ steps.build.outputs.status }}
 
   deploy:
     if: contains(github.event.head_commit.message, 'deploy') || !contains(github.event.head_commit.message, 'build')
