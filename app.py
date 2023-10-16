@@ -17,7 +17,7 @@ load_dotenv()
 
 app = Flask(__name__)
 tracer_provider = TracerProvider(
-        resource=Resource.create({SERVICE_NAME: str(os.getenv('SERVICE'))})
+        resource=Resource.create({SERVICE_NAME: str(os.getenv('SERVICE', 'service'))})
 )
 trace.set_tracer_provider(
     tracer_provider
@@ -28,7 +28,7 @@ FlaskInstrumentor().instrument_app(app)
 RequestsInstrumentor().instrument()
 
 trace_exporter = AzureMonitorTraceExporter(
-    connection_string=os.getenv('APP_CONNECTION')
+    connection_string=os.getenv('APP_CONNECTION', 'app_connection')
 )
 
 tracer_provider.add_span_processor(
