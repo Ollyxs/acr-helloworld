@@ -1,5 +1,5 @@
 import os
-import sys
+import logging
 from flask import Flask
 from dotenv import load_dotenv
 
@@ -10,8 +10,12 @@ from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+from opentelemetry._logs import set_logger_provider
 
 from azure.monitor.opentelemetry.exporter import AzureMonitorTraceExporter
+from azure.monitor.opentelemetry.exporter import AzureMonitorLogExporter
 
 load_dotenv()
 
@@ -37,8 +41,25 @@ tracer_provider.add_span_processor(
     BatchSpanProcessor(trace_exporter)
 )
 
+app.logger.setLevel(logging.INFO)
+
+logger_provider = LoggerProvider()
+set_logger_provider(logger_provider)
+
+log_exporter = AzureMonitorLogExporter(
+    connection_string=os.getenv('APP_CONNECTION', CONNECTION)
+)
+
+logger_provider.add_log_record_processor(
+    BatchLogRecordProcessor(log_exporter)
+)
+handler = LoggingHandler()
+
+app.logger.addHandler(LoggingHandler())
+
 @app.route('/')
 def hello():
+    app.logger.info("hello info")
     return "<h1>Hello, World!<h1/>"
 
 if __name__ == "__main__":
