@@ -15,6 +15,8 @@ from azure.monitor.opentelemetry.exporter import AzureMonitorTraceExporter
 
 load_dotenv()
 
+CONNECTION = "InstrumentationKey=0a00a0a0-00a0-0aaa-00aa-00aaa0aa00aa;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/"
+
 app = Flask(__name__)
 tracer_provider = TracerProvider(
         resource=Resource.create({SERVICE_NAME: str(os.getenv('SERVICE', 'service'))})
@@ -28,7 +30,7 @@ FlaskInstrumentor().instrument_app(app)
 RequestsInstrumentor().instrument()
 
 trace_exporter = AzureMonitorTraceExporter(
-    connection_string=os.getenv('APP_CONNECTION', 'app_connection')
+    connection_string=os.getenv('APP_CONNECTION', CONNECTION)
 )
 
 tracer_provider.add_span_processor(
