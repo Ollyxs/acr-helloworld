@@ -38,8 +38,8 @@ log_exporter = AzureMonitorLogExporter(
     connection_string=os.getenv('APP_CONNECTION', CONNECTION)
 )
 
-get_logger_provider().add_log_record_processor(
-    BatchLogRecordProcessor(log_exporter, schedule_delay_millis=6000)
+logger_provider.add_log_record_processor(
+    BatchLogRecordProcessor(log_exporter, schedule_delay_millis=30000)
 )
 
 handler = LoggingHandler()
