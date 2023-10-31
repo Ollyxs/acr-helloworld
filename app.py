@@ -55,7 +55,7 @@ app = Flask(__name__)
 # logger_provider.force_flush()
 
 logger = logging.getLogger(__name__)
-logger.addHandler(AzureLogHandler())
+logger.addHandler(AzureLogHandler(connection_string=os.getenv('APP_CONNECTION', CONNECTION)))
 
 logger.setLevel(logging.INFO)
 logger.info('Hello, World!')
