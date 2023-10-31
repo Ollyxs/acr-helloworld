@@ -13,7 +13,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
-from opentelemetry._logs import set_logger_provider
+from opentelemetry._logs import get_logger_provider, set_logger_provider
 
 from azure.monitor.opentelemetry.exporter import AzureMonitorTraceExporter
 from azure.monitor.opentelemetry.exporter import AzureMonitorLogExporter
@@ -23,13 +23,13 @@ load_dotenv()
 CONNECTION = "InstrumentationKey=0a00a0a0-00a0-0aaa-00aa-00aaa0aa00aa;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/"
 
 app = Flask(__name__)
-app.config["OTEL_PYTHON_LOG_FORMAT"] = True
-
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-
-FlaskInstrumentor().instrument_app(app)
-LoggingInstrumentor(set_logging_format=True).instrument()
+# app.config["OTEL_PYTHON_LOG_FORMAT"] = True
+#
+# logging.basicConfig()
+# logger = logging.getLogger(__name__)
+#
+# FlaskInstrumentor().instrument_app(app)
+# LoggingInstrumentor(set_logging_format=True).instrument()
 
 logger_provider = LoggerProvider()
 set_logger_provider(logger_provider)
@@ -38,12 +38,18 @@ log_exporter = AzureMonitorLogExporter(
     connection_string=os.getenv('APP_CONNECTION', CONNECTION)
 )
 
-logger_provider.add_log_record_processor(
-    BatchLogRecordProcessor(log_exporter)
+get_logger_provider().add_log_record_processor(
+    BatchLogRecordProcessor(log_exporter, schedule_delay_millis=6000)
 )
-#handler = LoggingHandler()
 
-#app.logger.addHandler(LoggingHandler())
+handler = LoggingHandler()
+logger = logging.getLogger(__name__)
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
+
+logger.info("Hello, World!")
+
+logger_provider.force_flush()
 
 tracer_provider = TracerProvider(
         resource=Resource.create({SERVICE_NAME: str(os.getenv('SERVICE', 'service'))})
