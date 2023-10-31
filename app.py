@@ -18,7 +18,7 @@ from opentelemetry._logs import get_logger_provider, set_logger_provider
 from azure.monitor.opentelemetry.exporter import AzureMonitorTraceExporter
 from azure.monitor.opentelemetry.exporter import AzureMonitorLogExporter
 #OpenCensus
-from opencensus.ext.azure.log_exporter import AzureLogHandler
+# from opencensus.ext.azure.log_exporter import AzureLogHandler
 
 
 load_dotenv()
@@ -34,33 +34,29 @@ app = Flask(__name__)
 # FlaskInstrumentor().instrument_app(app)
 # LoggingInstrumentor(set_logging_format=True).instrument()
 
-# logger_provider = LoggerProvider()
-# set_logger_provider(logger_provider)
-#
-# log_exporter = AzureMonitorLogExporter(
-#     connection_string=os.getenv('APP_CONNECTION', CONNECTION)
-# )
-#
-# logger_provider.add_log_record_processor(
-#     BatchLogRecordProcessor(log_exporter, schedule_delay_millis=30000)
-# )
-#
-# handler = LoggingHandler()
-# logger = logging.getLogger(__name__)
-# logger.addHandler(handler)
-# logger.setLevel(logging.INFO)
-#
-# logger.info("Hello, World!")
-#
-# logger_provider.force_flush()
+#Opentelemetry
+logger_provider = LoggerProvider()
+set_logger_provider(logger_provider)
 
+log_exporter = AzureMonitorLogExporter(
+    connection_string=os.getenv('APP_CONNECTION', CONNECTION)
+)
+
+logger_provider.add_log_record_processor(
+    BatchLogRecordProcessor(log_exporter)
+)
+
+handler = LoggingHandler()
 logger = logging.getLogger(__name__)
-logger.addHandler(AzureLogHandler(connection_string=os.getenv('APP_CONNECTION', CONNECTION)))
-
-#info
+logger.addHandler(handler)
 logger.setLevel(logging.INFO)
-logger.info('Hello, World!')
 
+# OpenCensus
+# logger = logging.getLogger(__name__)
+# logger.addHandler(AzureLogHandler(connection_string=os.getenv('APP_CONNECTION', CONNECTION)))
+
+# info
+logger.info("Hello, World!")
 #exception
 properties = {'custom_dimensions': {'key_1': 'value_1', 'key_2': 'value_2'}}
 
@@ -72,6 +68,8 @@ except Exception:
 
 #error
 logger.error('This is an error message.')
+
+logger_provider.force_flush()
 
 tracer_provider = TracerProvider(
         resource=Resource.create({SERVICE_NAME: str(os.getenv('SERVICE', 'service'))})
