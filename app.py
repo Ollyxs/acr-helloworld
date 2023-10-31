@@ -3,7 +3,7 @@ import logging
 from flask import Flask
 from dotenv import load_dotenv
 
-
+# OpenTelemetry
 from opentelemetry import trace
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
@@ -14,9 +14,12 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry._logs import get_logger_provider, set_logger_provider
-
+#Azure Monitor
 from azure.monitor.opentelemetry.exporter import AzureMonitorTraceExporter
 from azure.monitor.opentelemetry.exporter import AzureMonitorLogExporter
+#OpenCensus
+from opencensus.ext.azure.log_exporter import AzureLogHandler
+
 
 load_dotenv()
 
@@ -31,25 +34,31 @@ app = Flask(__name__)
 # FlaskInstrumentor().instrument_app(app)
 # LoggingInstrumentor(set_logging_format=True).instrument()
 
-logger_provider = LoggerProvider()
-set_logger_provider(logger_provider)
+# logger_provider = LoggerProvider()
+# set_logger_provider(logger_provider)
+#
+# log_exporter = AzureMonitorLogExporter(
+#     connection_string=os.getenv('APP_CONNECTION', CONNECTION)
+# )
+#
+# logger_provider.add_log_record_processor(
+#     BatchLogRecordProcessor(log_exporter, schedule_delay_millis=30000)
+# )
+#
+# handler = LoggingHandler()
+# logger = logging.getLogger(__name__)
+# logger.addHandler(handler)
+# logger.setLevel(logging.INFO)
+#
+# logger.info("Hello, World!")
+#
+# logger_provider.force_flush()
 
-log_exporter = AzureMonitorLogExporter(
-    connection_string=os.getenv('APP_CONNECTION', CONNECTION)
-)
-
-logger_provider.add_log_record_processor(
-    BatchLogRecordProcessor(log_exporter, schedule_delay_millis=30000)
-)
-
-handler = LoggingHandler()
 logger = logging.getLogger(__name__)
-logger.addHandler(handler)
+logger.addHandler(AzureLogHandler())
+
 logger.setLevel(logging.INFO)
-
-logger.info("Hello, World!")
-
-logger_provider.force_flush()
+logger.info('Hello, World!')
 
 tracer_provider = TracerProvider(
         resource=Resource.create({SERVICE_NAME: str(os.getenv('SERVICE', 'service'))})
