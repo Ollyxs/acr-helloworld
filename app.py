@@ -57,8 +57,21 @@ app = Flask(__name__)
 logger = logging.getLogger(__name__)
 logger.addHandler(AzureLogHandler(connection_string=os.getenv('APP_CONNECTION', CONNECTION)))
 
+#info
 logger.setLevel(logging.INFO)
 logger.info('Hello, World!')
+
+#exception
+properties = {'custom_dimensions': {'key_1': 'value_1', 'key_2': 'value_2'}}
+
+# Use properties in exception logs
+try:
+    result = 1 / 0  # generate a ZeroDivisionError
+except Exception:
+    logger.exception('Captured an exception.', extra=properties)
+
+#error
+logger.error('This is an error message.')
 
 tracer_provider = TracerProvider(
         resource=Resource.create({SERVICE_NAME: str(os.getenv('SERVICE', 'service'))})
