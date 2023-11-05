@@ -11,7 +11,7 @@ WORKDIR /home/flaskapp
 USER flaskapp
 RUN mkdir app
 #copia la carpeta del proyecto a la imagen
-#COPY ./main ./main
+COPY ./main ./main
 
 COPY ./app.py .
 
