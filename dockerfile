@@ -15,10 +15,10 @@ COPY ./main ./main
 
 COPY ./app.py .
 
-ADD requirements.txt ./requirements.txt
+COPY requirements.txt ./requirements.txt
 
 RUN pip install --no-cache-dir -r requirements.txt
 
 #puerto por el que escucha la imagen
 EXPOSE 5000
-CMD [ "python", "./app.py" ]%
+CMD [ "python", "./app.py" ]
