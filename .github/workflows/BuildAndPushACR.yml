@@ -4,8 +4,8 @@ env:
 on:
   workflow_dispatch:
   push:
-    tags: ['v*.*.*']
-    branch: [main]
+    tags: ["v*.*.*"]
+    branches: [main]
 
 permissions:
   id-token: write
@@ -17,11 +17,11 @@ jobs:
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
     steps:
-    - name: 'Get tag'
-      id: tag
-      uses: dawidd6/action-get-tag@v1
-    - name: 'Use tag'
-      run: echo "tag=${{ steps.tag.outputs.tag }}" >> "$GITHUB_OUTPUT"
+      - name: "Get tag"
+        id: tag
+        uses: dawidd6/action-get-tag@v1
+      - name: "Use tag"
+        run: echo "tag=${{ steps.tag.outputs.tag }}" >> "$GITHUB_OUTPUT"
 
   analyze:
     runs-on: ubuntu-latest
@@ -33,24 +33,24 @@ jobs:
       run:
         shell: bash
     steps:
-    - name: 'Checkout repository'
-      uses: actions/checkout@v4
-    - name: 'Set up Python'
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-    - name: 'Install dependencies'
-      run: |
-        python -m pip install --upgrade pip
-        if [ -f requirements.txt ];
-        then pip install -r requirements.txt;
-        fi
-        echo "CODEQL_PYTHON=$(which python)" >> $GITHUB_ENV
-    - name: 'Initialize CodeQL'
-      uses: github/codeql-action/init@v2
-      with:
-        languages: python
-        setup-python-dependencies: false
+      - name: "Checkout repository"
+        uses: actions/checkout@v4
+      - name: "Set up Python"
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: "Install dependencies"
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ];
+          then pip install -r requirements.txt;
+          fi
+          echo "CODEQL_PYTHON=$(which python)" >> $GITHUB_ENV
+      - name: "Initialize CodeQL"
+        uses: github/codeql-action/init@v2
+        with:
+          languages: python
+          setup-python-dependencies: false
 
   test:
     needs: analyze
@@ -59,30 +59,33 @@ jobs:
       run:
         shell: bash
     steps:
-    - uses: actions/checkout@v4
-    - name: 'Set up Python'
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-    - name: 'Install dependencies'
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    - name: 'Test with unittest'
-      run: |
-        python -m unittest discover -s tests
+      - uses: actions/checkout@v4
+      - name: "Set up Python"
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: "Install dependencies"
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: "Test with unittest"
+        env:
+          APP_CONNECTION: ${{ secrets.APP_CONNECTION }}
+          SERVICE: ${{ env.REPO_NAME }}
+        run: |
+          python -m unittest discover -s tests
 
   security:
     needs: test
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
-    - name: 'Run Snyk to check for vulnerabilities'
-      uses: snyk/actions/python-3.10@master
-      env:
-        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      with:
-        command: monitor
+      - uses: actions/checkout@master
+      - name: "Run Snyk to check for vulnerabilities"
+        uses: snyk/actions/python-3.10@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: monitor
 
   build:
     needs: [getTag, security]
@@ -93,20 +96,20 @@ jobs:
         shell: bash
         working-directory: ${{ github.workspace }}
     steps:
-    - name: 'Checkout GitHub Action'
-      uses: actions/checkout@v4
-    - name: 'Build and push image'
-      uses: azure/docker-login@v1
-      with:
-        login-server: ${{ secrets.ACR_NAME }}
-        username: ${{ secrets.REGISTRY_USERNAME }}
-        password: ${{ secrets.REGISTRY_PASSWORD }}
-    - run: |
-        docker build . -t ${{ secrets.ACR_NAME }}/${{ env.REPO_NAME }}:${{ needs.getTag.outputs.tag }}
-        docker push ${{ secrets.ACR_NAME }}/${{ env.REPO_NAME }}:${{ needs.getTag.outputs.tag }}
-    - name: 'Work successfully'
-      id: build
-      run: echo "::set-output name=status::success"
+      - name: "Checkout GitHub Action"
+        uses: actions/checkout@v4
+      - name: "Build and push image"
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ secrets.ACR_NAME }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+      - run: |
+          docker build . -t ${{ secrets.ACR_NAME }}/${{ env.REPO_NAME }}:${{ needs.getTag.outputs.tag }}
+          docker push ${{ secrets.ACR_NAME }}/${{ env.REPO_NAME }}:${{ needs.getTag.outputs.tag }}
+      - name: "Work successfully"
+        id: build
+        run: echo "::set-output name=status::success"
     outputs:
       status: ${{ steps.build.outputs.status }}
 
@@ -120,39 +123,38 @@ jobs:
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
     steps:
-    - name: 'Login via Azure CLI'
-      uses: azure/login@v1
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-    - name: 'Checkout GitHub Action'
-      uses: actions/checkout@v4
-    - name: 'Get tag'
-      id: tag
-      run: |
-        if [ "${{ needs.build.outputs.status }}" == 'success' ]; then
-          echo "::set-output name=tag::${{ needs.getTag.outputs.tag }}"
-        else
-          MESSAGE=$(git log -1 --pretty=%B)
-          VERSION=$(echo $MESSAGE | grep -oP 'v\d+\.\d+\.\d+')
-          echo "::set-output name=tag::$VERSION"
-        fi
-    - name: 'Deploy Container Instancer'
-      uses: azure/aci-deploy@v1
-      with:
-        location: eastus
-        name: acr-helloworld
-        resource-group: um
-        image: ${{ secrets.ACR_NAME }}/${{ env.REPO_NAME }}:${{ steps.tag.outputs.tag }}
-        dns-name-label: um-${{ github.run_id }}-${{ github.run_attempt }}
-        registry-username: ${{ secrets.REGISTRY_USERNAME }}
-        registry-password: ${{ secrets.REGISTRY_PASSWORD }}
-        ports: 5000
-        cpu: 1
-        memory: 1
-        environment-variables: SERVICE=${{ env.REPO_NAME }}
-        secure-environment-variables: APP_CONNECTION=${{ secrets.APP_CONNECTION }}
+      - name: "Login via Azure CLI"
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: "Checkout GitHub Action"
+        uses: actions/checkout@v4
+      - name: "Get tag"
+        id: tag
+        run: |
+          if [ "${{ needs.build.outputs.status }}" == 'success' ]; then
+            echo "::set-output name=tag::${{ needs.getTag.outputs.tag }}"
+          else
+            MESSAGE=$(git log -1 --pretty=%B)
+            VERSION=$(echo $MESSAGE | grep -oP 'v\d+\.\d+\.\d+')
+            echo "::set-output name=tag::$VERSION"
+          fi
+      - name: "Deploy Container Instancer"
+        uses: azure/aci-deploy@v1
+        with:
+          location: eastus
+          name: acr-helloworld
+          resource-group: um
+          image: ${{ secrets.ACR_NAME }}/${{ env.REPO_NAME }}:${{ steps.tag.outputs.tag }}
+          dns-name-label: um-${{ github.run_id }}-${{ github.run_attempt }}
+          registry-username: ${{ secrets.REGISTRY_USERNAME }}
+          registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+          ports: 5000
+          cpu: 1
+          memory: 1
+          environment-variables: SERVICE=${{ env.REPO_NAME }}
+          secure-environment-variables: APP_CONNECTION=${{ secrets.APP_CONNECTION }}
 
-
-    - name: 'Logout'
-      run: |
-        az logout
+      - name: "Logout"
+        run: |
+          az logout
